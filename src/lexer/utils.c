@@ -9,7 +9,42 @@ const char *KEYWORDS[] = {
 
 const char *PREFIXES[] = {
   "f!",
-  "m!"
+  "m!def"
+};
+
+struct symbol_entry SYMBOLS[] = {
+  {"(", TOKEN_TYPE_LPAREN},
+  {")", TOKEN_TYPE_RPAREN},
+  {"{", TOKEN_TYPE_LBRACE},
+  {"}", TOKEN_TYPE_RBRACE},
+  {";", TOKEN_TYPE_SEMICOLON},
+  {"[", TOKEN_TYPE_LBRACKET},
+  {"]", TOKEN_TYPE_RBRACKET},
+  {",", TOKEN_TYPE_COMMA},
+  {"#", TOKEN_TYPE_HASH},
+  {"/", TOKEN_TYPE_SLASH},
+  {"++", TOKEN_TYPE_INC},
+  {"--", TOKEN_TYPE_DEC},
+  {"==", TOKEN_TYPE_EQ},
+  {"!=", TOKEN_TYPE_NEQ},
+  {"<=", TOKEN_TYPE_LTE},
+  {">=", TOKEN_TYPE_GTE},
+  {"&&", TOKEN_TYPE_AND},
+  {"||", TOKEN_TYPE_OR},
+  {"<<", TOKEN_TYPE_LSHIFT},
+  {">>", TOKEN_TYPE_RSHIFT},
+  {"*", TOKEN_TYPE_ASTERISK},
+  {"+", TOKEN_TYPE_PLUS},
+  {"-", TOKEN_TYPE_MINUS},
+  {"=", TOKEN_TYPE_ASSIGN},
+  {"!", TOKEN_TYPE_BANG},
+  {"<", TOKEN_TYPE_LT},
+  {">", TOKEN_TYPE_GT},
+  {"&", TOKEN_TYPE_AMP},
+  {"|", TOKEN_TYPE_PIPE},
+  {"^", TOKEN_TYPE_CARET},
+  {"~", TOKEN_TYPE_TILD},
+  {"%", TOKEN_TYPE_PERCENT},
 };
 
 int lexer_utils_isalpha(char c) {
@@ -34,6 +69,24 @@ int lexer_utils_iskeyword(char *str) {
     }
   }
   return 0;
+}
+
+int lexer_utils_issymbol(struct Lexer *lexer) {
+  for (unsigned i = 0; i < sizeof(SYMBOLS) / sizeof(SYMBOLS[0]); i++) {
+    if (strncmp(lexer->source + lexer->pos, SYMBOLS[i].value, strlen(SYMBOLS[i].value)) == 0) {
+      return strlen(SYMBOLS[i].value);
+    }
+  }
+  return 0;
+}
+
+struct symbol_entry *lexer_utils_get_symbol(struct Lexer *lexer) {
+  for (unsigned i = 0; i < sizeof(SYMBOLS) / sizeof(SYMBOLS[0]); i++) {
+    if (strncmp(lexer->source + lexer->pos, SYMBOLS[i].value, strlen(SYMBOLS[i].value)) == 0) {
+      return &SYMBOLS[i];
+    }
+  }
+  return NULL;
 }
 
 void lexer_append_token(struct Lexer *lexer, token_t *token) {

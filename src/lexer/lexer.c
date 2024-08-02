@@ -3,9 +3,12 @@
 #include <lexer/lexer.h>
 #include <string.h>
 #include <stdlib.h>
+#include <preprocessor/pre.h>
 
 #define ALLOC_TOKEN(name) token_t *name = (token_t *)malloc(sizeof(token_t))
 #define CLEANUP_SIZE(token) token->value = (char*)realloc(token->value, token->len + 1)
+
+extern const char *PREFIXES[];
 
 struct Lexer *lexer_create(char *source, size_t len) {
   struct Lexer *lexer = (struct Lexer *)malloc(sizeof(struct Lexer));
@@ -83,13 +86,39 @@ void lexer_parse_prefix(struct Lexer *lexer) {
   int plen = lexer_utils_isprefix(lexer);
   char *literal = (char*)malloc(plen+1);
   ALLOC_TOKEN(token);
+
   token->pos = lexer->pos;
   token->value = literal;
   token->type = TOKEN_TYPE_PREFIX;
+
   for (int i = 0; i < plen; i++) {
     literal[i] = lexer_eat(lexer);
   }
+
   token->len = plen;
+  CLEANUP_SIZE(token);
+
+  if (strcmp(literal, PREFIXES[MACRO_DEF_INDEX]) == 0) {
+    DEBUG("MACRO\n");
+    pre_process_macrodef(lexer, token);
+    return;
+  }
+
+  return lexer_append_token(lexer, token);
+}
+
+void lexer_parse_symbol(struct Lexer *lexer) {
+  struct symbol_entry *symbol = lexer_utils_get_symbol(lexer);
+  ALLOC_TOKEN(token);
+  token->pos = lexer->pos;
+  token->value = (char*)malloc(strlen(symbol->value) + 1);
+  token->type = symbol->type;
+
+  for (unsigned i = 0; i < strlen(symbol->value); i++) {
+    token->value[i] = lexer_eat(lexer);
+  }
+
+  token->len = strlen(symbol->value);
   return lexer_append_token(lexer, token);
 }
 
@@ -102,6 +131,24 @@ void lexer_discriminator(struct Lexer *lexer) {
   }
   else if (lexer_utils_isalpha(lexer->p_tok)) {
     lexer_parse_multi_ps(lexer);
+  }
+  else if (lexer_utils_issymbol(lexer)) {
+    lexer_parse_symbol(lexer);
+  }
+  else if (lexer->p_tok == '/' && lexer_peak(lexer, 1) == '/') {
+    // Handle line comment
+    lexer_advance(lexer, 2);
+    while (lexer->p_tok != '\n') {
+      lexer_advance(lexer, 1);
+    }
+  }
+  else if (lexer->p_tok == '/' && lexer_peak(lexer, 1) == '*') {
+    // Handle block comment
+    lexer_advance(lexer, 2);
+    while (lexer->p_tok != '*' && lexer_peak(lexer, 1) != '/') {
+      lexer_advance(lexer, 1);
+    }
+    lexer_advance(lexer, 2);
   }
   else if (lexer->p_tok == ' ' || lexer->p_tok == '\n' || lexer->p_tok == '\t') {
     lexer_advance(lexer, 1); // Handle whitespaces
@@ -123,5 +170,13 @@ void __lexer__dump_tokens(struct Lexer *lexer) {
   while (ts) {
     DEBUG("Token: [%d] '%s' (%d)\n", ts->token->type, ts->token->value, ts->token->len);
     ts = ts->next;
+  }
+}
+
+void __lexer_dump_macros(struct Lexer *lexer) {
+  struct macro_stream *ms = lexer->macros;
+  while (ms) {
+    DEBUG("Macro: %s = %s\n", ms->name, ms->value);
+    ms = ms->next;
   }
 }
