@@ -7,6 +7,10 @@ const char *KEYWORDS[] = {
   "pub"
 };
 
+const char *PREFIXES[] = {
+  "f!",
+  "m!"
+};
 
 int lexer_utils_isalpha(char c) {
   if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '.') {
@@ -24,7 +28,7 @@ int lexer_utils_isnum(char c) {
 }
 
 int lexer_utils_iskeyword(char *str) {
-  for (int i = 0; i < sizeof(KEYWORDS) / sizeof(KEYWORDS[0]); i++) {
+  for (unsigned i = 0; i < sizeof(KEYWORDS) / sizeof(KEYWORDS[0]); i++) {
     if (strcmp(KEYWORDS[i], str) == 0) {
       return 1;
     }
@@ -42,4 +46,13 @@ void lexer_append_token(struct Lexer *lexer, token_t *token) {
     lexer->last_token->next = ts;
   }
   lexer->last_token = ts;
+}
+
+int lexer_utils_isprefix(struct Lexer *lexer) {
+  for (unsigned i=0; i  < sizeof(PREFIXES) / sizeof(PREFIXES[0]); i++) {
+    if (strncmp(lexer->source + lexer->pos, PREFIXES[i], strlen(PREFIXES[i])) == 0) {
+      return strlen(PREFIXES[i]);
+    }
+  }
+  return 0;
 }

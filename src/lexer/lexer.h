@@ -6,6 +6,7 @@
 #define LEXER_H
 
 #define MAX_INT_LEN 20
+#define MAX_IDENT_LEN 100
 
 struct token_stream {
   token_t *token;
@@ -27,6 +28,8 @@ void lexer_parse(struct Lexer *lexer);
 int lexer_utils_isalpha(char c);
 int lexer_utils_isnum(char c);
 int lexer_utils_iskeyword(char *str);
+int lexer_utils_isprefix(struct Lexer *lexer);
 void lexer_append_token(struct Lexer *lexer, token_t *token);
+void __lexer__dump_tokens(struct Lexer *lexer);
 
 #endif

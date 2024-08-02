@@ -15,7 +15,7 @@ SOURCES := $(shell find $(SRC_DIR) -name '*.c')
 TEST_EXEC := galbt
 
 $(TEST_EXEC): $(SOURCES)
-	$(CC) $(CFLAGS) $< -o $@
+	$(CC) $(CFLAGS) $^ -o $@
 
 test: $(TEST_EXEC)
 	./$(TEST_EXEC)
