@@ -1,3 +1,27 @@
+CURRENT:
+
+- Structure a scope-system that will be passed to the parser to unify statement parsing.
+  How To:
+  - Create a scope struct that will be passed to the parser.
+  - When discriminating in the parser the scope is being passed to parsing function
+  - Any declaration is allowed in scope (even functions in functions)
+  - When a function is declared, a new scope is created and passed to the same parser function for the function body
+- Scope needs to have a parent scope, so that it can be used to resolve declarations from the parent scope
+
+```pseudo
+fn parse_fn(scope) {
+  new_scope = create_scope()
+  while ( token != '}' ) {
+    parse(new_scope)
+  }
+}
+
+fn parse (scope) {
+  parse_fn(scope)
+}
+```
+
 
 -- FUTURE:
-+ Add argument based macros
+
+- Add argument based macros

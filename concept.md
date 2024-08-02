@@ -172,3 +172,21 @@ ADD(1,2)
 ```c
 m!def VALUE_DEF 50
 ```
+
+## Prefixes
+
+### Galileo is prefix based
+
+This means that most declarations have a prefix indicating the type
+
+```c
+m!def NAME VAL
+```
+
+`m!` stands for **macro** and `def` obv stands for **definition**
+
+```c
+f!int main() {}
+```
+
+`f!` stands for **function** while `int` is the function return type
