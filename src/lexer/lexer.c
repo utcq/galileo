@@ -18,6 +18,7 @@ struct Lexer *lexer_create(char *source, size_t len) {
   lexer->len=len;
   lexer->last_token=NULL;
   lexer->tokens_begin=NULL;
+  lexer->macros=NULL;
   return lexer;
 }
 
@@ -31,7 +32,10 @@ void lexer_advance(struct Lexer *lexer, int ns) {
   }
 }
 
-char lexer_peak(struct Lexer *lexer, int ns) {
+char lexer_peek(struct Lexer *lexer, int ns) {
+  if (lexer->pos + ns >= lexer->len) {
+    return '\0';
+  }
   return lexer->source[lexer->pos + ns];
 }
 
@@ -42,84 +46,116 @@ char lexer_eat(struct Lexer *lexer) {
 }
 
 void lexer_parse_int_literal(struct Lexer *lexer) {
-  char *literal = (char*)malloc(MAX_INT_LEN);
-  ALLOC_TOKEN(token);
-  token->pos = lexer->pos;
-  token->value = literal;
-  token->type = TOKEN_TYPE_INTEGER;
+    char *literal = (char*)malloc(MAX_INT_LEN);
+    if (!literal) {
+        perror("Failed to allocate memory for integer literal");
+        return;
+    }
+    literal[0] = '\0';
+    ALLOC_TOKEN(token);
+    token->pos = lexer->pos;
+    token->value = literal;
+    token->type = TOKEN_TYPE_INTEGER;
 
-  for (char c = lexer_eat(lexer); lexer_utils_isnum(c); c = lexer_eat(lexer)) {
-    strncat(literal, &c, 1);
-  }
-  lexer_advance(lexer, -1);
+    for (char c = lexer_eat(lexer); lexer_utils_isnum(c); c = lexer_eat(lexer)) {
+        strncat(literal, &c, 1);
+    }
+    lexer_advance(lexer, -1);
 
-  token->len = strlen(literal);
-  CLEANUP_SIZE(token);
+    token->len = strlen(literal);
+    CLEANUP_SIZE(token);
 
-  return lexer_append_token(lexer, token);
+    lexer_append_token(lexer, token);
 }
 
 void lexer_parse_multi_ps(struct Lexer *lexer) {
-  char *literal = (char*)malloc(MAX_IDENT_LEN);
-  ALLOC_TOKEN(token);
-  token->pos = lexer->pos;
-  token->value = literal;
-  token->type = TOKEN_TYPE_IDENTIFIER;
+    char *literal = (char*)malloc(MAX_IDENT_LEN);
+    if (!literal) {
+        perror("Failed to allocate memory for identifier");
+        return;
+    }
+    literal[0] = '\0';
 
-  for (char c = lexer_eat(lexer); lexer_utils_isalpha(c); c = lexer_eat(lexer)) {
-    strncat(literal, &c, 1);
-  }
-  lexer_advance(lexer, -1);
+    ALLOC_TOKEN(token);
+    token->pos = lexer->pos;
+    token->value = literal;
+    token->type = TOKEN_TYPE_IDENTIFIER;
 
+    for (char c = lexer_eat(lexer); lexer_utils_isalpha(c); c = lexer_eat(lexer)) {
+        strncat(literal, &c, 1);
+    }
+    lexer_advance(lexer, -1);
 
-  if (lexer_utils_iskeyword(literal)) {
-    token->type = TOKEN_TYPE_KEYWORD;
-  }
+    token->len = strlen(literal);
+    CLEANUP_SIZE(token);
 
-  token->len = strlen(literal);
-  CLEANUP_SIZE(token);
+    if (lexer_utils_iskeyword(literal)) {
+        token->type = TOKEN_TYPE_KEYWORD;
+    }
+    else {
+      struct macro_stream *bmacro = lexer_utils_ismacro(lexer, literal);
+      if (bmacro) {
+        pre_process_macroref(lexer, token, bmacro);
+        return;
+      }
+    }
 
-  return lexer_append_token(lexer, token);
+    lexer_append_token(lexer, token);
 }
 
 void lexer_parse_prefix(struct Lexer *lexer) {
-  int plen = lexer_utils_isprefix(lexer);
-  char *literal = (char*)malloc(plen+1);
-  ALLOC_TOKEN(token);
+    int plen = lexer_utils_isprefix(lexer);
+    char *literal = (char*)malloc(plen + 1);
+    if (!literal) {
+        perror("Failed to allocate memory for prefix");
+        return;
+    }
+    literal[0] = '\0';
 
-  token->pos = lexer->pos;
-  token->value = literal;
-  token->type = TOKEN_TYPE_PREFIX;
+    ALLOC_TOKEN(token);
+    token->pos = lexer->pos;
+    token->value = literal;
+    token->type = TOKEN_TYPE_PREFIX;
 
-  for (int i = 0; i < plen; i++) {
-    literal[i] = lexer_eat(lexer);
-  }
+    for (int i = 0; i < plen; i++) {
+        literal[i] = lexer_eat(lexer);
+    }
+    literal[plen] = '\0';
 
-  token->len = plen;
-  CLEANUP_SIZE(token);
+    token->len = plen;
+    CLEANUP_SIZE(token);
 
-  if (strcmp(literal, PREFIXES[MACRO_DEF_INDEX]) == 0) {
-    DEBUG("MACRO\n");
-    pre_process_macrodef(lexer, token);
-    return;
-  }
+    if (strcmp(literal, PREFIXES[MACRO_DEF_INDEX]) == 0) {
+      pre_process_macrodef(lexer);
+      return;
+    }
 
-  return lexer_append_token(lexer, token);
+    lexer_append_token(lexer, token);
 }
 
 void lexer_parse_symbol(struct Lexer *lexer) {
-  struct symbol_entry *symbol = lexer_utils_get_symbol(lexer);
-  ALLOC_TOKEN(token);
-  token->pos = lexer->pos;
-  token->value = (char*)malloc(strlen(symbol->value) + 1);
-  token->type = symbol->type;
+    struct symbol_entry *symbol = lexer_utils_get_symbol(lexer);
+    if (!symbol) {
+        WARN("Unknown symbol: %c\n", lexer->p_tok);
+        lexer_advance(lexer, 1);
+        return;
+    }
 
-  for (unsigned i = 0; i < strlen(symbol->value); i++) {
-    token->value[i] = lexer_eat(lexer);
-  }
+    ALLOC_TOKEN(token);
+    token->pos = lexer->pos;
+    token->value = (char*)malloc(strlen(symbol->value) + 1);
+    if (!token->value) {
+        perror("Failed to allocate memory for symbol token");
+        free(token);
+        return;
+    }
 
-  token->len = strlen(symbol->value);
-  return lexer_append_token(lexer, token);
+    strcpy(token->value, symbol->value);
+    token->type = symbol->type;
+    token->len = strlen(symbol->value);
+
+    lexer_advance(lexer, token->len);
+    lexer_append_token(lexer, token);
 }
 
 void lexer_discriminator(struct Lexer *lexer) {
@@ -132,25 +168,23 @@ void lexer_discriminator(struct Lexer *lexer) {
   else if (lexer_utils_isalpha(lexer->p_tok)) {
     lexer_parse_multi_ps(lexer);
   }
-  else if (lexer_utils_issymbol(lexer)) {
-    lexer_parse_symbol(lexer);
-  }
-  else if (lexer->p_tok == '/' && lexer_peak(lexer, 1) == '/') {
-    // Handle line comment
+  else if (lexer->p_tok == '/' && lexer_peek(lexer, 1) == '/') {
     lexer_advance(lexer, 2);
     while (lexer->p_tok != '\n') {
       lexer_advance(lexer, 1);
     }
   }
-  else if (lexer->p_tok == '/' && lexer_peak(lexer, 1) == '*') {
-    // Handle block comment
+  else if (lexer->p_tok == '/' && lexer_peek(lexer, 1) == '*') {
     lexer_advance(lexer, 2);
-    while (lexer->p_tok != '*' && lexer_peak(lexer, 1) != '/') {
+    while (lexer->p_tok != '*' && lexer_peek(lexer, 1) != '/') {
       lexer_advance(lexer, 1);
     }
     lexer_advance(lexer, 2);
   }
-  else if (lexer->p_tok == ' ' || lexer->p_tok == '\n' || lexer->p_tok == '\t') {
+  else if (lexer_utils_issymbol(lexer)) {
+    lexer_parse_symbol(lexer);
+  }
+  else if (lexer->p_tok == ' ' || lexer->p_tok == '\n' || lexer->p_tok == '\t' || lexer->p_tok == '\r' || lexer->p_tok == '\0') {
     lexer_advance(lexer, 1); // Handle whitespaces
   }
   else {
@@ -163,6 +197,28 @@ void lexer_parse(struct Lexer *lexer) {
   while (lexer->pos < lexer->len) {
     lexer_discriminator(lexer);
   }
+}
+
+void lexer_destroy(struct Lexer *lexer) {
+  struct token_stream *ts = lexer->tokens_begin;
+  while (ts) {
+    struct token_stream *next = ts->next;
+    free(ts->token->value);
+    free(ts->token);
+    free(ts);
+    ts = next;
+  }
+
+  struct macro_stream *ms = lexer->macros;
+  while (ms) {
+    struct macro_stream *next = ms->next;
+    free(ms->name);
+    free(ms->value);
+    free(ms);
+    ms = next;
+  }
+
+  free(lexer);
 }
 
 void __lexer__dump_tokens(struct Lexer *lexer) {

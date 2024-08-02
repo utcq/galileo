@@ -153,6 +153,8 @@ else {
 
 > Galileo comes with a preprocessor!
 
+> **It isn't a simple find and replace, a new sub-lexer is spawned on every macro call**
+
 And It looks like this:
 
 ```c

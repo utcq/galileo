@@ -80,6 +80,17 @@ int lexer_utils_issymbol(struct Lexer *lexer) {
   return 0;
 }
 
+struct macro_stream *lexer_utils_ismacro(struct Lexer *lexer, char *name) {
+  struct macro_stream *macro = lexer->macros;
+  while (macro != NULL) {
+    if (strcmp(macro->name, name) == 0) {
+      return macro;
+    }
+    macro = macro->next;
+  }
+  return NULL;
+}
+
 struct symbol_entry *lexer_utils_get_symbol(struct Lexer *lexer) {
   for (unsigned i = 0; i < sizeof(SYMBOLS) / sizeof(SYMBOLS[0]); i++) {
     if (strncmp(lexer->source + lexer->pos, SYMBOLS[i].value, strlen(SYMBOLS[i].value)) == 0) {

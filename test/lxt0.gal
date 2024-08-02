@@ -1,3 +1,8 @@
-m!def VAL_TEST 10
+m!def VAL_VAL 10
+m!def VAL_TEST \
+  VAL_VAL + 2
 
-f!int main() {}
+// Main Function
+f!int main() {
+  VAL_TEST
+}
