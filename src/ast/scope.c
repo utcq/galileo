@@ -1,4 +1,5 @@
 #include <ast/scope.h>
+#include <pool/log.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,6 +10,9 @@ struct pt_scope *scope_new_scope(struct pt_scope *parent, char *scope_name) {
   scope->parent = parent;
   scope->scope_name = scope_name;
   scope->declarations = (struct declaration_hashmap*)malloc(sizeof(struct declaration_hashmap));
+  memset(scope->declarations, 0, sizeof(struct declaration_hashmap));
+  scope->declarations->data = (struct declaration_map_child**)malloc(sizeof(struct declaration_map_child*));
+  scope->declarations->length = 1;
   return scope;
 }
 
@@ -23,22 +27,31 @@ struct declaration_map_child *scope_get_declaration(struct pt_scope *scope, char
   return NULL;
 }
 
-void __scope_decl_memman(struct scope_children *arr /* Generic */) {
+void __scope_decl_memman(struct declaration_hashmap *arr) {
   if (arr->pos+1 >= arr->length) {
     arr->length = arr->length*2;
-    arr->data = realloc(arr->data, arr->length);
+    void *new_alloc = realloc(arr->data, sizeof(struct declaration_map_child*)*arr->length);
+    arr->data = new_alloc;
   }
 }
+
+void __scope_sc_memman(struct scope_children *arr) {
+  if (arr->pos+1 >= arr->length) {
+    arr->length = arr->length*2;
+    arr->data = realloc(arr->data, sizeof(struct declaration_map_child*)*arr->length);
+  }
+}
+
 
 void scope_new_declaration(struct pt_scope *scope, char *key, struct declaration_v *value) {
   struct declaration_map_child *child = malloc(sizeof(struct declaration_map_child));
   child->key = key;
   child->value = value;  
-  __scope_decl_memman((struct scope_children*)scope->declarations);
+  __scope_decl_memman(scope->declarations);
   scope->declarations->data[scope->declarations->pos++] = child;
 }
 
 void scope_append_child(struct pt_scope *scope, struct pt_scope *child) {
-  __scope_decl_memman(&scope->children);
+  __scope_sc_memman(&scope->children);
   scope->children.data[scope->children.pos++] = child;
 }

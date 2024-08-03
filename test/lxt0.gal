@@ -4,6 +4,6 @@ m!def VAL_TEST \
 
 
 // Main Function
-f!int main() {
+f!int main(a:int) {
   VAL_TEST
 }

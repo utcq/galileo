@@ -10,11 +10,25 @@ typedef enum {
   DECLARATION_TYPEDEF
 } declaration_type_t;
 
+struct function_parameter {
+  char *name;
+  char *type;
+  struct function_parameter *next;
+};
+
+struct function_declaration {
+  char *name;
+  char *type;
+  struct function_parameter *parameters;
+  struct pt_scope *scope;
+};
+
 
 struct declaration_v {
   declaration_type_t type;
   union {
     // ... (TODO: Types)
+    struct function_declaration *fn_decl;
   } data;
 };
 

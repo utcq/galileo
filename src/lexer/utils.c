@@ -18,6 +18,7 @@ struct symbol_entry SYMBOLS[] = {
   {"{", TOKEN_TYPE_LBRACE},
   {"}", TOKEN_TYPE_RBRACE},
   {";", TOKEN_TYPE_SEMICOLON},
+  {":", TOKEN_TYPE_COLON},
   {"[", TOKEN_TYPE_LBRACKET},
   {"]", TOKEN_TYPE_RBRACKET},
   {",", TOKEN_TYPE_COMMA},

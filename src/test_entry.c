@@ -46,6 +46,7 @@ void lex_file_from_disk(const char* filename) {
 
     struct Parser *parser = parser_create(lexer);
     parser_parse(parser);
+    __parser_dump_scope(parser);
 
     free(buffer);
 }
