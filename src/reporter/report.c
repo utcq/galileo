@@ -6,7 +6,7 @@
 #include <stdlib.h>
 
 
-void error_dump(token_t *token, struct Lexer *lexer) {
+void error_dump(token_t *token, struct Lexer *lexer, const char *msg) {
   int line = 1;
   int col = 1;
   char *line_str = malloc(256);
@@ -28,16 +28,16 @@ void error_dump(token_t *token, struct Lexer *lexer) {
       line_str[linep++] = lexer->source[i+1];
     }
     if (cline>line) {
+      line_str[linep-1] = '\0';
       break;
     }
   }
 
-  WARN("At line %d, col %d:\n", line, col);
-  PRINT("    \x1b[34m%d |   \x1b[36m%s\n\x1b[0m", line, line_str);
+  ERROR("%s. At line %d, col %d:\n", msg, line, col);
+  PRINT("    \x1b[34m[%d] |  \x1b[36m%s\n\x1b[0m", line, line_str);
 }
 
 void report_error(token_t *token, struct Lexer *lexer, const char *message) {
-  ERROR("%s\n", message);
-  error_dump(token, lexer);
+  error_dump(token, lexer, message);
   exit(0);
 }

@@ -4,8 +4,6 @@ m!def VAL_TEST \
 
 
 // Main Function
-f!int main a:int) {
+f!int main(a:int) {
   return VAL_TEST;
 }
-
-return 0;

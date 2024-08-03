@@ -43,7 +43,8 @@ typedef enum {
   TOKEN_TYPE_CARET,
   TOKEN_TYPE_TILD,
   TOKEN_TYPE_PERCENT,
-  TOKEN_TYPE_DECORATOR
+  TOKEN_TYPE_DECORATOR,
+  TOKEN_TYPE_OPERATOR
 } token_type_t;
 
 struct symbol_entry{

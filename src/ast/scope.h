@@ -11,20 +11,19 @@ typedef enum {
 } declaration_type_t;
 
 typedef enum {
-  VALUE_TYPE_INT
+  VALUE_TYPE_INT,
+  VALUE_TYPE_STR,
+  VALUE_TYPE_BOOL,
+  VALUE_TYPE_FLOAT,
+  VALUE_TYPE_CHAR,
+  VALUE_TYPE_VOID,
+  VALUE_TYPE_IDENTIFIER
 } value_type_t;
 
 typedef enum {
   SCOPE_GLOBAL,
   SCOPE_FUNCTION
 } scope_type_t;
-
-struct RLValue {
-  value_type_t type;
-  union {
-    int int_value;
-  } data;
-};
 
 struct function_parameter {
   char *name;
@@ -42,7 +41,6 @@ struct function_declaration {
 struct variable_declaration {
   char *name;
   char *type;
-  struct RLValue *value;
 };
 
 struct declaration_v {
@@ -99,5 +97,35 @@ struct pt_scope {
 };
 
 struct pt_scope *scope_new_scope(struct pt_scope *parent, char *scope_name);
+
+typedef enum {
+    EXPR_LITERAL,
+    EXPR_BINARY_OP,
+    EXPR_VARIABLE
+} expr_type_t;
+
+typedef enum {
+    OP_ADD,
+    OP_SUBTRACT,
+    OP_MULTIPLY,
+    OP_DIVIDE
+} operator_t;
+
+struct expression_node {
+    expr_type_t type;
+    union {
+        struct {
+            int value;
+        } literal;
+        struct {
+            operator_t op;
+            struct expression_node *left;
+            struct expression_node *right;
+        } binary_op;
+        struct {
+            char *name;
+        } variable;
+    } data;
+};
 
 #endif

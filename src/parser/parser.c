@@ -5,6 +5,7 @@
 #include <parser/parser.h>
 #include <ast/scope.h>
 #include <reporter/report.h>
+#include <parser/exp.h>
 #include <string.h>
 
 #define AUTO_ASSERT(x) if (!x) { return; }
@@ -80,7 +81,6 @@ void parser_parse_function(struct Parser *parser, struct pt_scope *scope) {
     struct variable_declaration *var_decl = malloc(sizeof(struct variable_declaration));
     var_decl->name = arg->value;
     var_decl->type = arg_type->value;
-    var_decl->value = NULL;
     struct declaration_v *arg_gen_decl = malloc(sizeof(struct declaration_v));
     arg_gen_decl->type = DECLARATION_VARIABLE;
     arg_gen_decl->data.var_decl = var_decl;
@@ -101,12 +101,14 @@ void parser_parse_function(struct Parser *parser, struct pt_scope *scope) {
   AUTO_ASSERT(parser_askfor(parser, TOKEN_TYPE_RBRACE, NULL));
 }
 
+
 void parser_parse_return(struct Parser *parser, struct pt_scope *scope) {
   token_t *tester = parser_eat(parser);
   if (scope->type != SCOPE_FUNCTION) {
     report_error(tester, parser->lexer, "Return statement outside of function");
     return;
   }
+  struct expression_node *exp = exp_parser_parse_semicolon(parser);
 }
 
 void parser_discriminator(struct Parser *parser, struct pt_scope *scope) {

@@ -79,6 +79,7 @@ void pre_process_macroref(struct Lexer *lexer, token_t *token, struct macro_stre
   lexer_parse(macro_lexer);
   struct token_stream *ts = macro_lexer->tokens_begin;
   while (ts != NULL) {
+    ts->token->pos += token->pos;
     lexer_append_token(lexer, ts->token);
     ts = ts->next;
   }
