@@ -56,3 +56,15 @@ void scope_append_child(struct pt_scope *scope, struct pt_scope *child) {
   __scope_sc_memman(&scope->children);
   scope->children.data[scope->children.pos++] = child;
 }
+
+void scope_add_statement(struct pt_scope *scope, struct statement_node *statement) {
+  if (!scope->statements) {
+    scope->statements = statement;
+    return;
+  }
+  struct statement_node *current = scope->statements;
+  while (current->next) {
+    current = current->next;
+  }
+  current->next = statement;
+}

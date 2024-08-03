@@ -25,6 +25,47 @@ typedef enum {
   SCOPE_FUNCTION
 } scope_type_t;
 
+typedef enum {
+  STATEMENT_DECLARATION,
+  STATEMENT_RETURN,
+  STATEMENT_IF,
+  STATEMENT_WHILE,
+  STATEMENT_FOR,
+  STATEMENT_BREAK,
+  STATEMENT_CONTINUE,
+} statement_type_t;
+
+struct statement_actual {
+  statement_type_t type;
+  union {
+    struct {
+      struct declaration_v *declaration;
+    } declaration;
+    struct {
+      struct expression_node *expression;
+    } return_;
+    struct {
+      struct expression_node *condition;
+      struct statement_node *body;
+    } if_;
+    struct {
+      struct expression_node *condition;
+      struct statement_node *body;
+    } while_;
+    struct {
+      struct statement_node *init;
+      struct expression_node *condition;
+      struct statement_node *post;
+      struct statement_node *body;
+    } for_;
+  } data;
+};
+
+struct statement_node {
+  struct statement_actual *actual;
+  struct statement_node *next;
+};
+
 struct function_parameter {
   char *name;
   char *type;
@@ -41,6 +82,7 @@ struct function_declaration {
 struct variable_declaration {
   char *name;
   char *type;
+  struct expression_node *value;
 };
 
 struct declaration_v {
@@ -94,6 +136,7 @@ struct pt_scope {
   char *scope_name;
   struct scope_children children;
   struct declaration_hashmap *declarations;
+  struct statement_node *statements;
 };
 
 struct pt_scope *scope_new_scope(struct pt_scope *parent, char *scope_name);
@@ -127,5 +170,7 @@ struct expression_node {
         } variable;
     } data;
 };
+
+void scope_add_statement(struct pt_scope *scope, struct statement_node *statement);
 
 #endif

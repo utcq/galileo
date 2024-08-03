@@ -5,5 +5,5 @@ m!def VAL_TEST \
 
 // Main Function
 f!int main(a:int) {
-  return VAL_TEST;
+  return VAL_TEST*2;
 }

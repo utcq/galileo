@@ -227,7 +227,7 @@ void lexer_destroy(struct Lexer *lexer) {
 void __lexer__dump_tokens(struct Lexer *lexer) {
   struct token_stream *ts = lexer->tokens_begin;
   while (ts) {
-    DEBUG("Token: [%d] '%s' (%d)\n", ts->token->type, ts->token->value, ts->token->len);
+    //DEBUG("Token: [%d] '%s' (%d)\n", ts->token->type, ts->token->value, ts->token->len);
     ts = ts->next;
   }
 }
@@ -235,7 +235,7 @@ void __lexer__dump_tokens(struct Lexer *lexer) {
 void __lexer_dump_macros(struct Lexer *lexer) {
   struct macro_stream *ms = lexer->macros;
   while (ms) {
-    DEBUG("Macro: %s = %s\n", ms->name, ms->value);
+    //DEBUG("Macro: %s = %s\n", ms->name, ms->value);
     ms = ms->next;
   }
 }

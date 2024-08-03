@@ -109,6 +109,13 @@ void parser_parse_return(struct Parser *parser, struct pt_scope *scope) {
     return;
   }
   struct expression_node *exp = exp_parser_parse_semicolon(parser);
+  struct statement_node *stmt = malloc(sizeof(struct statement_node));
+  stmt->actual = malloc(sizeof(struct statement_actual));
+  stmt->actual->type = STATEMENT_RETURN;
+  stmt->actual->data.return_.expression = exp;
+  stmt->next = NULL;
+  scope_add_statement(scope, stmt);
+
 }
 
 void parser_discriminator(struct Parser *parser, struct pt_scope *scope) {
@@ -173,20 +180,62 @@ void __dump_variable(struct declaration_map_child *child) {
   DEBUG("Variable Type: [%s]\n", var_decl->type);
 }
 
+void __dump_expr(struct expression_node *expr) {
+  switch (expr->type) {
+    case EXPR_LITERAL:
+      DEBUG("Expression Type: [Literal] %d\n", expr->data.literal.value);
+      break;
+    case EXPR_VARIABLE:
+      DEBUG("Expression Type: [Variable] %s\n", expr->data.variable.name);
+      break;
+    case EXPR_BINARY_OP:
+      DEBUG("Expression Type: [Binary Op]\n");
+      __dump_expr(expr->data.binary_op.left);
+      DEBUG("Operator: [%d]\n", expr->data.binary_op.op);
+      __dump_expr(expr->data.binary_op.right);
+      break;
+    default:
+      WARN("Unknown expression type %d\n", expr->type);
+      break;
+  }
+}
+
+void __dump_stat(struct statement_node *stmt) {
+  switch (stmt->actual->type) {
+    case STATEMENT_RETURN:
+      DEBUG("Statement Type: [Return]\n");
+      __dump_expr(stmt->actual->data.return_.expression);
+      break;
+    default:
+      WARN("Unknown statement type %d\n", stmt->actual->type);
+      break;
+  }
+}
+
+void __dump_decl(struct declaration_map_child *child) {
+  switch (child->value->type) {
+    case DECLARATION_FUNCTION:
+      __dump_func(child);
+      break;
+    case DECLARATION_VARIABLE:
+      __dump_variable(child);
+      break;
+    default:
+      WARN("Unknown declaration type %d\n", child->value->type);
+      break;
+  }
+}
+
 void __scope_dump(struct pt_scope *scope) {
   for (uint i = 0; i < scope->declarations->pos; i++) {
     struct declaration_map_child *child = scope->declarations->data[i];
-    switch (child->value->type) {
-      case DECLARATION_FUNCTION:
-        __dump_func(child);
-        break;
-      case DECLARATION_VARIABLE:
-        __dump_variable(child);
-        break;
-      default:
-        WARN("Unknown declaration type %d\n", child->value->type);
-        break;
-    }
+    __dump_decl(child);
+  }
+
+  struct statement_node *stmt = scope->statements;
+  while (stmt) {
+    __dump_stat(stmt);
+    stmt = stmt->next;
   }
 }
 
