@@ -2,7 +2,7 @@
 SRC_DIR := src/
 INCLUDES := -I$(SRC_DIR)
 LIBS :=
-TEST_FLAGS := -Wl,--defsym=main=__test_main -Wl,-wrap,exit -Wl,-wrap,abort -Wl,-wrap,assert
+TEST_FLAGS := -Wl,--defsym=main=__test_main -Wl,-wrap,abort -Wl,-wrap,assert
 CFLAGS := -Wall -Wextra -Werror -std=gnu23 -g $(INCLUDES) $(LIBS) $(TEST_FLAGS)
 
 CC := clang

@@ -90,7 +90,10 @@ void lexer_parse_multi_ps(struct Lexer *lexer) {
     CLEANUP_SIZE(token);
 
     if (lexer_utils_iskeyword(literal)) {
-        token->type = TOKEN_TYPE_KEYWORD;
+      token->type = TOKEN_TYPE_KEYWORD;
+    }
+    else if (lexer_utils_isdecorator(literal)) {
+      token->type = TOKEN_TYPE_DECORATOR;
     }
     else {
       struct macro_stream *bmacro = lexer_utils_ismacro(lexer, literal);

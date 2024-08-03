@@ -3,8 +3,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-const char *KEYWORDS[] = {
+const char *DECORATOR[] = {
   "pub"
+};
+
+const char *KEYWORDS[] = {
+  "return"
 };
 
 const char *PREFIXES[] = {
@@ -66,6 +70,15 @@ int lexer_utils_isnum(char c) {
 int lexer_utils_iskeyword(char *str) {
   for (unsigned i = 0; i < sizeof(KEYWORDS) / sizeof(KEYWORDS[0]); i++) {
     if (strcmp(KEYWORDS[i], str) == 0) {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+int lexer_utils_isdecorator(char *str) {
+  for (unsigned i = 0; i < sizeof(DECORATOR) / sizeof(DECORATOR[0]); i++) {
+    if (strcmp(DECORATOR[i], str) == 0) {
       return 1;
     }
   }

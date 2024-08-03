@@ -43,6 +43,7 @@ int lexer_utils_isnum(char c);
 int lexer_utils_iskeyword(char *str);
 int lexer_utils_isprefix(struct Lexer *lexer);
 int lexer_utils_issymbol(struct Lexer *lexer);
+int lexer_utils_isdecorator(char *str);
 struct macro_stream *lexer_utils_ismacro(struct Lexer *lexer, char *name);
 struct symbol_entry *lexer_utils_get_symbol(struct Lexer *lexer);
 void lexer_append_token(struct Lexer *lexer, token_t *token);

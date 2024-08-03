@@ -14,6 +14,7 @@ void parser_advance(struct Parser *parser, int ns);
 token_t *parser_eat(struct Parser *parser);
 token_t *parser_peek(struct Parser *parser, int ns);
 
+void parser_discriminator(struct Parser *parser, struct pt_scope *scope);
 struct Parser *parser_create(struct Lexer *lexer);
 void parser_parse(struct Parser *parser);
 

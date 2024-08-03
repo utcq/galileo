@@ -13,6 +13,7 @@ struct pt_scope *scope_new_scope(struct pt_scope *parent, char *scope_name) {
   memset(scope->declarations, 0, sizeof(struct declaration_hashmap));
   scope->declarations->data = (struct declaration_map_child**)malloc(sizeof(struct declaration_map_child*));
   scope->declarations->length = 1;
+  scope->type = SCOPE_GLOBAL;
   return scope;
 }
 

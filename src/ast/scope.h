@@ -10,6 +10,22 @@ typedef enum {
   DECLARATION_TYPEDEF
 } declaration_type_t;
 
+typedef enum {
+  VALUE_TYPE_INT
+} value_type_t;
+
+typedef enum {
+  SCOPE_GLOBAL,
+  SCOPE_FUNCTION
+} scope_type_t;
+
+struct RLValue {
+  value_type_t type;
+  union {
+    int int_value;
+  } data;
+};
+
 struct function_parameter {
   char *name;
   char *type;
@@ -23,12 +39,18 @@ struct function_declaration {
   struct pt_scope *scope;
 };
 
+struct variable_declaration {
+  char *name;
+  char *type;
+  struct RLValue *value;
+};
 
 struct declaration_v {
   declaration_type_t type;
   union {
     // ... (TODO: Types)
     struct function_declaration *fn_decl;
+    struct variable_declaration *var_decl;
   } data;
 };
 
@@ -69,6 +91,7 @@ void scope_new_declaration(struct pt_scope *scope, char *key, struct declaration
 struct declaration_map_child *scope_get_declaration(struct pt_scope *scope, char *key);
 
 struct pt_scope {
+  scope_type_t type;
   struct pt_scope *parent;
   char *scope_name;
   struct scope_children children;
