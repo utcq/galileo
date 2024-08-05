@@ -4,11 +4,14 @@
 #include <string.h>
 
 const char *DECORATOR[] = {
-  "pub"
+  "pub",
+  "const",
+  "static",
 };
 
 const char *KEYWORDS[] = {
-  "return"
+  "return",
+  "var"
 };
 
 const char *PREFIXES[] = {

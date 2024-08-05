@@ -8,6 +8,8 @@ struct Parser {
   struct Lexer *lexer;
   struct token_stream *current_token;
   struct pt_scope *global_scope;
+  char **specifiers;
+  unsigned char spec_count;
 };
 
 void parser_advance(struct Parser *parser, int ns);

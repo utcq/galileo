@@ -43,7 +43,7 @@ void lex_file_from_disk(const char* filename) {
     lexer_parse(lexer);
     __lexer__dump_tokens(lexer);
     __lexer_dump_macros(lexer);
-
+    
     struct Parser *parser = parser_create(lexer);
     parser_parse(parser);
     __parser_dump_scope(parser);

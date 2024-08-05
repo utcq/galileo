@@ -1,5 +1,8 @@
+#include <pool/token.h>
 #ifndef SCOPE_H
 #define SCOPE_H
+
+#define MAX_SPECIFIERS 10
 
 #include <stdint.h>
 typedef enum {
@@ -59,6 +62,7 @@ struct statement_actual {
       struct statement_node *body;
     } for_;
   } data;
+
 };
 
 struct statement_node {
@@ -92,6 +96,7 @@ struct declaration_v {
     struct function_declaration *fn_decl;
     struct variable_declaration *var_decl;
   } data;
+  char **specifiers;
 };
 
 /* Scope struct:
@@ -158,7 +163,13 @@ struct expression_node {
     expr_type_t type;
     union {
         struct {
-            int value;
+            token_type_t value_type;
+            union {
+              int int_value;
+              float float_value;
+              char char_value;
+              char* str_value;
+            } value;
         } literal;
         struct {
             operator_t op;

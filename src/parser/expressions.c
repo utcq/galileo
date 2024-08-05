@@ -20,7 +20,20 @@ struct expression_node *create_expression_node(expr_type_t type) {
 
 struct expression_node *exp_parser_parse_literal(struct Parser *parser) {
     struct expression_node *node = create_expression_node(EXPR_LITERAL);
-    node->data.literal.value = atoi(parser->current_token->token->value);
+    node->data.literal.value_type = parser->current_token->token->type;
+    switch (node->data.literal.value_type) {
+        case TOKEN_TYPE_INTEGER:
+            node->data.literal.value.int_value = atoi(parser->current_token->token->value);
+            break;
+        case TOKEN_TYPE_STRING:
+            node->data.literal.value.str_value = strdup(parser->current_token->token->value);
+            break;
+        //case TOKEN_TYPE_CHAR:
+        //case TOKEN_TYPE_FLOAT:
+        default:
+            report_error(parser->current_token->token, parser->lexer, "Unexpected token");
+            return NULL;
+    }
     parser_advance(parser, 1);
     return node;
 }
