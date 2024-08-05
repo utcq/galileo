@@ -36,6 +36,7 @@ typedef enum {
   STATEMENT_FOR,
   STATEMENT_BREAK,
   STATEMENT_CONTINUE,
+  STATEMENT_EXPRESSION
 } statement_type_t;
 
 struct statement_actual {
@@ -61,6 +62,9 @@ struct statement_actual {
       struct statement_node *post;
       struct statement_node *body;
     } for_;
+    struct {
+      struct expression_node *expst;
+    } expression;
   } data;
 
 };
@@ -148,8 +152,9 @@ struct pt_scope *scope_new_scope(struct pt_scope *parent, char *scope_name);
 
 typedef enum {
     EXPR_LITERAL,
+    EXPR_VARIABLE,
     EXPR_BINARY_OP,
-    EXPR_VARIABLE
+    EXPR_FUNCTION_CALL
 } expr_type_t;
 
 typedef enum {
@@ -165,10 +170,10 @@ struct expression_node {
         struct {
             token_type_t value_type;
             union {
-              int int_value;
-              float float_value;
-              char char_value;
-              char* str_value;
+                int int_value;
+                float float_value;
+                char char_value;
+                char* str_value;
             } value;
         } literal;
         struct {
@@ -179,6 +184,11 @@ struct expression_node {
         struct {
             char *name;
         } variable;
+        struct {
+            char *name;
+            struct expression_node **arguments;
+            int argument_count;
+        } function_call;
     } data;
 };
 

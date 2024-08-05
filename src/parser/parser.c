@@ -65,7 +65,7 @@ void parser_parse_function(struct Parser *parser, struct pt_scope *scope) {
   fn_decl->type = type->value;
   fn_decl->scope = scope_new_scope(scope, fn_decl->name);
   fn_decl->scope->type = SCOPE_FUNCTION;
-  struct function_parameter *fn_params;
+  struct function_parameter *fn_params = NULL;
 
   AUTO_ASSERT(parser_askfor(parser, TOKEN_TYPE_LPAREN, NULL));
   while (parser->current_token->token->type != TOKEN_TYPE_RPAREN) {
@@ -74,9 +74,10 @@ void parser_parse_function(struct Parser *parser, struct pt_scope *scope) {
     token_t *arg_type = parser_askfor(parser, TOKEN_TYPE_IDENTIFIER, NULL);
     if (!arg || !arg_type) { return; }
 
-    if (parser_peek(parser, 1)->type == TOKEN_TYPE_COMMA) {
+    if (parser->current_token->token->type == TOKEN_TYPE_COMMA) {
       parser_advance(parser, 1);
     }
+
     if (!fn_params) {
       fn_params = malloc(sizeof(struct function_parameter));
     } else {
@@ -165,6 +166,18 @@ void parser_parse_variable(struct Parser *parser, struct pt_scope *scope) {
   scope_add_statement(scope, stmt);
 }
 
+
+void parser_parse_exp_stat(struct Parser *parser) {
+  struct expression_node *exp = exp_parser_parse_semicolon(parser);
+  struct statement_node *stmt = malloc(sizeof(struct statement_node));
+  stmt->actual = malloc(sizeof(struct statement_actual));
+  stmt->actual->type = STATEMENT_EXPRESSION;
+  stmt->actual->data.expression.expst = exp;
+  stmt->next = NULL;
+  scope_add_statement(parser->global_scope, stmt);
+}
+
+
 void parser_discriminator(struct Parser *parser, struct pt_scope *scope) {
   token_t *token = parser->current_token->token;
   if (token->type == TOKEN_TYPE_PREFIX && (strcmp(token->value, "f!") == 0)) {
@@ -183,10 +196,11 @@ void parser_discriminator(struct Parser *parser, struct pt_scope *scope) {
   else if (token->type == TOKEN_TYPE_KEYWORD && (strcmp(token->value, "var") == 0)) {
     parser_parse_variable(parser, scope);
   }
-  
+
   else {
-    WARN("Unexpected token %s\n", token->value);
-    parser_advance(parser, 1);
+    parser_parse_exp_stat(parser);
+    //WARN("Unexpected token %s\n", token->value);
+    //parser_advance(parser, 1);
   }
   parser->spec_count=0;
 }

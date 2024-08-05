@@ -4,8 +4,14 @@ m!def VAL_TEST \
 
 const var CNVAR: uint = 10;
 
-// Main Function
-pub f!int main(a:int) {
-  var b: int = a*2;
-  return (VAL_TEST*2)+b;
+pub f!int add(a:int, b:int) {
+  return a+b+VAL_TEST;
 }
+
+// Main Function
+pub f!void main() {
+  var b: int = VAL_VAL+2;
+}
+
+main();
+

@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+
 struct expression_node *create_expression_node(expr_type_t type) {
     struct expression_node *node = malloc(sizeof(struct expression_node));
     if (!node) {
@@ -74,11 +75,55 @@ struct expression_node *exp_parser_parse_binary_op(struct Parser *parser, struct
     return left;
 }
 
+struct expression_node *exp_parser_parse_function_call(struct Parser *parser) {
+    struct expression_node *node = create_expression_node(EXPR_FUNCTION_CALL);
+    node->data.function_call.name = strdup(parser->current_token->token->value);
+    parser_advance(parser, 1); // Skip function name
+
+    if (parser->current_token->token->type != TOKEN_TYPE_LPAREN) {
+        report_error(parser->current_token->token, parser->lexer, "Expected '(' after function name");
+        return NULL;
+    }
+    parser_advance(parser, 1); // Skip '('
+
+    node->data.function_call.arguments = NULL;
+    node->data.function_call.argument_count = 0;
+
+    while (parser->current_token->token->type != TOKEN_TYPE_RPAREN) {
+        struct expression_node *arg = exp_parser_parse_expression(parser, 0);
+        if (!arg) {
+            return NULL;
+        }
+
+        node->data.function_call.arguments = realloc(node->data.function_call.arguments, sizeof(struct expression_node *) * (node->data.function_call.argument_count + 1));
+        node->data.function_call.arguments[node->data.function_call.argument_count++] = arg;
+
+        if (parser->current_token->token->type == TOKEN_TYPE_COMMA) {
+            parser_advance(parser, 1); // Skip ','
+        } else if (parser->current_token->token->type != TOKEN_TYPE_RPAREN) {
+            report_error(parser->current_token->token, parser->lexer, "Expected ',' or ')'");
+            return NULL;
+        }
+    }
+
+    if (parser->current_token->token->type != TOKEN_TYPE_RPAREN) {
+        report_error(parser->current_token->token, parser->lexer, "Expected ')'");
+        return NULL;
+    }
+    parser_advance(parser, 1); // Skip ')'
+
+    return node;
+}
+
 struct expression_node *exp_parser_parse_primary(struct Parser *parser) {
     if (parser->current_token->token->type == TOKEN_TYPE_INTEGER || parser->current_token->token->type == TOKEN_TYPE_STRING) {
         return exp_parser_parse_literal(parser);
     } else if (parser->current_token->token->type == TOKEN_TYPE_IDENTIFIER) {
-        return exp_parser_parse_variable(parser);
+        if (parser_peek(parser, 1)->type == TOKEN_TYPE_LPAREN) {
+            return exp_parser_parse_function_call(parser);
+        } else {
+            return exp_parser_parse_variable(parser);
+        }
     } else if (parser->current_token->token->type == TOKEN_TYPE_LPAREN) {
         parser_advance(parser, 1);
         struct expression_node *node = exp_parser_parse_expression(parser, 0);
@@ -112,6 +157,18 @@ struct expression_node *exp_parser_parse_semicolon(struct Parser *parser) {
         return NULL;
     }
     parser_advance(parser, 1); // Skip Semicolon
+    return root;
+}
+
+struct expression_node *exp_parser_parse_comma_or_rparen(struct Parser *parser) {
+    struct expression_node *root = exp_parser_parse_expression(parser, 0);
+    if (!root) {
+        return NULL;
+    }
+    if (parser->current_token->token->type != TOKEN_TYPE_COMMA && parser->current_token->token->type != TOKEN_TYPE_RPAREN) {
+        report_error(parser->current_token->token, parser->lexer, "Expected semicolon");
+        return NULL;
+    }
     return root;
 }
 
