@@ -27,9 +27,8 @@ fn parse (scope) {
 }
 ```
 
-- add calls to finally start iterating
-  -> add exp parse until `,` or `)`
 - implement expression interpretation to assign values
+- create a runtime reporter
 
 ## FUTURE:
 

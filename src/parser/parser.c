@@ -283,6 +283,10 @@ void __dump_expr(struct expression_node *expr) {
       DEBUG("Operator: [%d]\n", expr->data.binary_op.op);
       __dump_expr(expr->data.binary_op.right);
       break;
+    case EXPR_FUNCTION_CALL:
+      DEBUG("Expression Type: [Function Call]\n");
+      DEBUG("Function Name: [%s]\n", expr->data.function_call.name);
+      break;
     default:
       WARN("Unknown expression type %d\n", expr->type);
       break;
@@ -324,6 +328,10 @@ void __dump_stat(struct statement_node *stmt) {
     case STATEMENT_DECLARATION:
       DEBUG("Statement Type: [Declaration]\n");
       __dump_declaration(stmt);
+      break;
+    case STATEMENT_EXPRESSION:
+      DEBUG("Statement Type: [Expression]\n");
+      __dump_expr(stmt->actual->data.expression.expst);
       break;
     default:
       WARN("Unknown statement type %d\n", stmt->actual->type);

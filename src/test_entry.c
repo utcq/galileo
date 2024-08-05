@@ -1,6 +1,7 @@
 #include <pool/log.h>
 #include <lexer/lexer.h>
 #include <parser/parser.h>
+#include <runtime/rt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -47,6 +48,7 @@ void lex_file_from_disk(const char* filename) {
     struct Parser *parser = parser_create(lexer);
     parser_parse(parser);
     __parser_dump_scope(parser);
+    runtime_execute(parser->global_scope);
 
     free(buffer);
 }

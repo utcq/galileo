@@ -154,7 +154,8 @@ typedef enum {
     EXPR_LITERAL,
     EXPR_VARIABLE,
     EXPR_BINARY_OP,
-    EXPR_FUNCTION_CALL
+    EXPR_FUNCTION_CALL,
+    EXPR_NULL
 } expr_type_t;
 
 typedef enum {
@@ -189,6 +190,9 @@ struct expression_node {
             struct expression_node **arguments;
             int argument_count;
         } function_call;
+        struct {
+          void *null_val;
+        } null;
     } data;
 };
 
