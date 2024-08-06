@@ -66,6 +66,7 @@ void parser_parse_function(struct Parser *parser, struct pt_scope *scope) {
   fn_decl->scope = scope_new_scope(scope, fn_decl->name);
   fn_decl->scope->type = SCOPE_FUNCTION;
   struct function_parameter *fn_params = NULL;
+  struct function_parameter *final_param = NULL;
 
   AUTO_ASSERT(parser_askfor(parser, TOKEN_TYPE_LPAREN, NULL));
   while (parser->current_token->token->type != TOKEN_TYPE_RPAREN) {
@@ -80,6 +81,7 @@ void parser_parse_function(struct Parser *parser, struct pt_scope *scope) {
 
     if (!fn_params) {
       fn_params = malloc(sizeof(struct function_parameter));
+      final_param = fn_params;
     } else {
       fn_params->next = malloc(sizeof(struct function_parameter));
       fn_params = fn_params->next;
@@ -97,14 +99,24 @@ void parser_parse_function(struct Parser *parser, struct pt_scope *scope) {
   }
   AUTO_ASSERT(parser_askfor(parser, TOKEN_TYPE_RPAREN, NULL));
 
-  fn_decl->parameters = fn_params;
+  fn_decl->parameters = final_param;
   struct declaration_v *gen_decl = malloc(sizeof(struct declaration_v));
   gen_decl->type = DECLARATION_FUNCTION;
   gen_decl->data.fn_decl = fn_decl;
   gen_decl->specifiers = (char**)malloc(sizeof(char*) * MAX_SPECIFIERS);
   memset(gen_decl->specifiers, 0, sizeof(char*)*MAX_SPECIFIERS);
   parser_decl_addspec(parser, gen_decl);
-  scope_new_declaration(scope, name->value, gen_decl);
+  if (
+    scope_new_declaration(scope, name->value, gen_decl)
+  ) {
+    report_error(name, parser->lexer, "Redeclaration of function");
+    return;
+  }
+
+  if (parser->current_token->token->type == TOKEN_TYPE_SEMICOLON) {
+    parser_advance(parser, 1);
+    return;
+  }
   
   AUTO_ASSERT(parser_askfor(parser, TOKEN_TYPE_LBRACE, NULL));
   while (parser->current_token->token->type != TOKEN_TYPE_RBRACE) {
@@ -167,14 +179,14 @@ void parser_parse_variable(struct Parser *parser, struct pt_scope *scope) {
 }
 
 
-void parser_parse_exp_stat(struct Parser *parser) {
+void parser_parse_exp_stat(struct Parser *parser, struct pt_scope *scope) {
   struct expression_node *exp = exp_parser_parse_semicolon(parser);
   struct statement_node *stmt = malloc(sizeof(struct statement_node));
   stmt->actual = malloc(sizeof(struct statement_actual));
   stmt->actual->type = STATEMENT_EXPRESSION;
   stmt->actual->data.expression.expst = exp;
   stmt->next = NULL;
-  scope_add_statement(parser->global_scope, stmt);
+  scope_add_statement(scope, stmt);
 }
 
 
@@ -198,7 +210,7 @@ void parser_discriminator(struct Parser *parser, struct pt_scope *scope) {
   }
 
   else {
-    parser_parse_exp_stat(parser);
+    parser_parse_exp_stat(parser, scope);
     //WARN("Unexpected token %s\n", token->value);
     //parser_advance(parser, 1);
   }

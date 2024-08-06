@@ -27,9 +27,13 @@ fn parse (scope) {
 }
 ```
 
-- implement expression interpretation to assign values
-- create a runtime reporter
+~~- implement expression interpretation to assign values~~
+
+- Scope state before call and restore it after, otherwise recursion will fail
+- Add FFI resolving
+- Add lib load keyword
 
 ## FUTURE:
 
 - Add argument based macros
+- create a runtime reporter

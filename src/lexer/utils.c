@@ -7,6 +7,7 @@ const char *DECORATOR[] = {
   "pub",
   "const",
   "static",
+  "extern"
 };
 
 const char *KEYWORDS[] = {

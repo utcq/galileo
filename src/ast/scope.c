@@ -44,12 +44,16 @@ void __scope_sc_memman(struct scope_children *arr) {
 }
 
 
-void scope_new_declaration(struct pt_scope *scope, char *key, struct declaration_v *value) {
+int scope_new_declaration(struct pt_scope *scope, char *key, struct declaration_v *value) {
   struct declaration_map_child *child = malloc(sizeof(struct declaration_map_child));
   child->key = key;
   child->value = value;  
+  if (scope_get_declaration(scope, key)) {
+    return 1;
+  }
   __scope_decl_memman(scope->declarations);
   scope->declarations->data[scope->declarations->pos++] = child;
+  return 0;
 }
 
 void scope_append_child(struct pt_scope *scope, struct pt_scope *child) {

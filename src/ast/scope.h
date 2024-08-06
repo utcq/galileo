@@ -136,7 +136,7 @@ struct declaration_hashmap {
   struct declaration_map_child **data;
 };
 
-void scope_new_declaration(struct pt_scope *scope, char *key, struct declaration_v *value);
+int scope_new_declaration(struct pt_scope *scope, char *key, struct declaration_v *value);
 struct declaration_map_child *scope_get_declaration(struct pt_scope *scope, char *key);
 
 struct pt_scope {
