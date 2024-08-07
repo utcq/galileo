@@ -77,6 +77,7 @@ struct statement_node {
 struct function_parameter {
   char *name;
   char *type;
+  unsigned char is_vararg;
   struct function_parameter *next;
 };
 
@@ -136,6 +137,12 @@ struct declaration_hashmap {
   struct declaration_map_child **data;
 };
 
+struct tl_lib_node {
+  char *dlpath;
+  void *handle;
+  struct tl_lib_node *next;
+};
+
 int scope_new_declaration(struct pt_scope *scope, char *key, struct declaration_v *value);
 struct declaration_map_child *scope_get_declaration(struct pt_scope *scope, char *key);
 
@@ -146,6 +153,7 @@ struct pt_scope {
   struct scope_children children;
   struct declaration_hashmap *declarations;
   struct statement_node *statements;
+  struct tl_lib_node *libs;
 };
 
 struct pt_scope *scope_new_scope(struct pt_scope *parent, char *scope_name);

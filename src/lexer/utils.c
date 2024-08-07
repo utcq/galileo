@@ -12,7 +12,8 @@ const char *DECORATOR[] = {
 
 const char *KEYWORDS[] = {
   "return",
-  "var"
+  "var",
+  "tl_loadlib"
 };
 
 const char *PREFIXES[] = {
@@ -54,6 +55,7 @@ struct symbol_entry SYMBOLS[] = {
   {"^", TOKEN_TYPE_OPERATOR},
   {"~", TOKEN_TYPE_OPERATOR},
   {"%", TOKEN_TYPE_OPERATOR},
+  {"$", TOKEN_TYPE_OPERATOR}
 };
 
 int lexer_utils_isalpha(char c) {

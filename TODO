@@ -33,9 +33,9 @@ fn parse (scope) {
 
 ~~- Add FFI resolving~~
 
-- Add lib load keyword
+~~- Add lib load keyword~~
 
-- keyword loads shared object pointer into Linked List
+~~- keyword loads shared object pointer into Linked List~~
 
 - Implement variadic arguments as a type convertible to an array
 

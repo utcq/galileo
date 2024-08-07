@@ -1,3 +1,4 @@
+#include <dlfcn.h>
 #include <stdlib.h>
 #include <lexer/lexer.h>
 #include <pool/log.h>
@@ -7,6 +8,7 @@
 #include <reporter/report.h>
 #include <parser/exp.h>
 #include <string.h>
+#include <FFI/ffi.h>
 
 #define AUTO_ASSERT(x) if (!x) { return; }
 
@@ -70,15 +72,22 @@ void parser_parse_function(struct Parser *parser, struct pt_scope *scope) {
 
   AUTO_ASSERT(parser_askfor(parser, TOKEN_TYPE_LPAREN, NULL));
   while (parser->current_token->token->type != TOKEN_TYPE_RPAREN) {
-    token_t *arg = parser_askfor(parser, TOKEN_TYPE_IDENTIFIER, NULL);
-    parser_askfor(parser, TOKEN_TYPE_COLON, NULL);
-    token_t *arg_type = parser_askfor(parser, TOKEN_TYPE_IDENTIFIER, NULL);
-    if (!arg || !arg_type) { return; }
-
-    if (parser->current_token->token->type == TOKEN_TYPE_COMMA) {
+    int is_vararg = 0;
+    token_t *arg_type = NULL;
+    if (parser->current_token->token->type == TOKEN_TYPE_OPERATOR && (strcmp(parser->current_token->token->value, "$") == 0)) {
+      is_vararg = 1;
       parser_advance(parser, 1);
     }
+    token_t *arg = parser_askfor(parser, TOKEN_TYPE_IDENTIFIER, NULL);
+    if (!is_vararg) {
+      parser_askfor(parser, TOKEN_TYPE_COLON, NULL);
+      arg_type = parser_askfor(parser, TOKEN_TYPE_IDENTIFIER, NULL);
+      if (!arg || !arg_type) { return; }
 
+      if (parser->current_token->token->type == TOKEN_TYPE_COMMA) {
+        parser_advance(parser, 1);
+      }
+    }
     if (!fn_params) {
       fn_params = malloc(sizeof(struct function_parameter));
       final_param = fn_params;
@@ -87,10 +96,17 @@ void parser_parse_function(struct Parser *parser, struct pt_scope *scope) {
       fn_params = fn_params->next;
     }
     fn_params->name = arg->value;
-    fn_params->type = arg_type->value;
+    if (arg_type) {
+      fn_params->type = arg_type->value;
+    } else { fn_params->type = NULL; }
+    fn_params->is_vararg = is_vararg;
     struct variable_declaration *var_decl = malloc(sizeof(struct variable_declaration));
     var_decl->name = arg->value;
-    var_decl->type = arg_type->value;
+    if (arg_type)
+      var_decl->type = arg_type->value;
+    else {
+      var_decl->type = "VARIADIC";
+    }
     struct declaration_v *arg_gen_decl = malloc(sizeof(struct declaration_v));
     arg_gen_decl->type = DECLARATION_VARIABLE;
     arg_gen_decl->data.var_decl = var_decl;
@@ -189,6 +205,41 @@ void parser_parse_exp_stat(struct Parser *parser, struct pt_scope *scope) {
   scope_add_statement(scope, stmt);
 }
 
+void parser_parse_tl_loadlib(struct Parser *parser, struct pt_scope *scope) {
+  token_t *begin = parser_eat(parser);
+  token_t *libname = parser_askfor(parser, TOKEN_TYPE_STRING, NULL);
+  parser_askfor(parser, TOKEN_TYPE_SEMICOLON, NULL);
+
+  if (scope->type != SCOPE_GLOBAL) {
+    report_error(begin, parser->lexer, "Loadlib must be in global scope");
+  }
+  
+  struct tl_lib_node *node = scope->libs;
+  while (node) {
+    node=node->next;
+  }
+
+  void *handle = FFI_load_lib(libname->value);
+  if (!handle) {
+    ERROR("%s\n", dlerror());
+    report_error(libname, parser->lexer, "Failed to load library");
+    return;
+  }
+
+  if (!node) {
+    node = malloc(sizeof(struct tl_lib_node));
+    node->dlpath = libname->value;
+    node->handle = handle;
+    node->next = NULL;
+    scope->libs = node;
+  } else {
+    node->next = malloc(sizeof(struct tl_lib_node));
+    node->next->dlpath = libname->value;
+    node->next->handle = handle;
+    node->next->next = NULL;
+  }
+}
+
 
 void parser_discriminator(struct Parser *parser, struct pt_scope *scope) {
   token_t *token = parser->current_token->token;
@@ -207,6 +258,10 @@ void parser_discriminator(struct Parser *parser, struct pt_scope *scope) {
 
   else if (token->type == TOKEN_TYPE_KEYWORD && (strcmp(token->value, "var") == 0)) {
     parser_parse_variable(parser, scope);
+  }
+
+  else if (token->type == TOKEN_TYPE_KEYWORD && (strcmp(token->value, "tl_loadlib") == 0))  {
+    parser_parse_tl_loadlib(parser, scope);
   }
 
   else {

@@ -2,7 +2,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <pool/log.h>
-#include <dlfcn.h>
 #include <string.h>
 
 const char *PRIMITIVE_TYPES[] = {
@@ -16,10 +15,6 @@ const char *PRIMITIVE_TYPES[] = {
 
 void *FFI_load_lib(const char *lib) {
   void *dl = dlopen(lib, RTLD_LAZY);
-  if (!dl) {
-    ERROR("FFI Error: %s\n", dlerror());
-    exit(EXIT_FAILURE);
-  }
   return dl;
 }
 
@@ -32,6 +27,10 @@ void FFI_close_lib(void *lib_handle) {
 }
 
 void __assert_primitive(char *type) {
+  if (!type){
+    // Variadic argument
+    return;
+  }
   for (unsigned i=0; i < sizeof(PRIMITIVE_TYPES)/sizeof(PRIMITIVE_TYPES[0]); i++) {
     if (strcmp(type, PRIMITIVE_TYPES[i]) == 0) {
       return;
@@ -78,6 +77,7 @@ void __ffi_call(void* func_addr, int num_args, int64_t *args) {
         "jmp 1b\n"
         "2:\n"
         "call *%8\n"
+        "mov $0, %%rax"
         :
         : "r"(rdi), "r"(rsi), "r"(rdx), "r"(rcx), "r"(r8), "r"(r9),
           "r"(stack_arg_count), "r"(stack_args), "r"(func_addr)

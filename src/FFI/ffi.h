@@ -2,7 +2,7 @@
 #define FFI_H
 
 #include <ast/scope.h>
-
+#include <dlfcn.h>
 
 void *FFI_load_lib(const char *lib);
 void *FFI_resolve_fn(void *lib_handle, const char *fn_name);

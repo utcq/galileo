@@ -1,12 +1,11 @@
 #include <FFI/ffi.h>
+#include <dlfcn.h>
 #include <stdlib.h>
 #include <runtime/rt.h>
 #include <ast/scope.h>
 #include <reporter/report.h>
 #include <pool/log.h>
 #include <string.h>
-
-void *ffi_lib;
 
 void runtime_declare_variable(struct pt_scope *scope, struct declaration_v *decl) {
   struct declaration_v *rt_decl = (struct declaration_v *)malloc(sizeof(struct declaration_v));
@@ -48,6 +47,22 @@ struct declaration_map_child *runtime_resolve_decl(struct pt_scope *scope, char 
   return decl;
 }
 
+void *runtime_resolve_lib(struct pt_scope *scope, char *fn_name) {
+  while (scope->type != SCOPE_GLOBAL) {
+    scope = scope->parent;
+  }
+  struct tl_lib_node *current = scope->libs;
+  while (current) {
+    if (dlsym(current->handle, fn_name)) {
+      return current->handle;
+    }
+    current = current->next;
+  }
+  return NULL;
+}
+
+
+
 struct expression_node *runtime_fn_call(struct pt_scope *scope, struct expression_node *exp) {
   struct declaration_map_child *decl = runtime_resolve_decl(scope, exp->data.function_call.name);
 
@@ -72,7 +87,12 @@ struct expression_node *runtime_fn_call(struct pt_scope *scope, struct expressio
   
   int i=0;
   struct function_parameter *arg = decl->value->data.fn_decl->parameters;
+  int vararg_passed=0;
   while (arg) {
+    if (arg->is_vararg){
+      vararg_passed=1;
+      break;
+    }
     if (!exp->data.function_call.arguments) {
       ERROR("Missing arguments\n");
       exit(EXIT_FAILURE);
@@ -102,8 +122,22 @@ struct expression_node *runtime_fn_call(struct pt_scope *scope, struct expressio
   }
 
   if (is_extern) {
+    if (vararg_passed) {
+      for (int i=0;i<exp->data.function_call.argument_count;i++) {
+        ffi_args[i] = (int64_t)(
+          runtime_eval_expression(scope, exp->data.function_call.arguments[i])->data
+        ).literal.value.str_value; // Str Value as it is 8 bytes
+      }
+    }
+
+    char *fn_name = decl->key;
     DEBUG("Executing FFI %s\n", decl->key);
-    FFI_translation_level(ffi_lib, decl, exp->data.function_call.argument_count, ffi_args);
+    FFI_translation_level(runtime_resolve_lib(scope, fn_name), decl, exp->data.function_call.argument_count, ffi_args);
+    return NULL;
+  }
+  else if (vararg_passed) {
+    ERROR("Vararg not supported in Galileo\n");
+    exit(EXIT_FAILURE);
     return NULL;
   }
 
@@ -235,7 +269,6 @@ struct expression_node *runtime_exec_stats(struct pt_scope *scope) {
 }
 
 void runtime_execute(struct pt_scope *scope) {
-  ffi_lib = FFI_load_lib("./stdlib.so");
   runtime_exec_stats(scope); // exec gloabal scope
   /*struct declaration_map_child *decl = scope_get_declaration(scope, "tst_var");
   if (decl) {
