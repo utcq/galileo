@@ -12,7 +12,7 @@ ifeq (, @$(shell which $(CC)))
  $(warning "No $(CC) in path, consider installing $(CC)")
  CC := cc
 endif
-SOURCES := $(shell find $(SRC_DIR) -name '*.c')
+SOURCES := $(shell find $(SRC_DIR) -name '*.c') $(shell find $(SRC_DIR) -name '*.S')
 
 TEST_EXEC := galbt
 

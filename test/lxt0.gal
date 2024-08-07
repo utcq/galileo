@@ -6,4 +6,14 @@ tl_loadlib "./std/stdlib.so";
 
 extern f!void printf(fmt:string, $vargArrayName);
 
-printf("FFI Print call from Galileo, %d\n", 10);
+const var TEST_CONST: uint = 10;
+pub f!int add(a:int, b:int) {
+  return a+b;
+}
+// Main Function
+pub f!void main() {
+  var b: int = VAL_VAL+2;
+  var r: int = add(TEST_CONST, b);
+  printf("main.r = %s %d %d %d %d %d\n", "HEL", 10, 50, 20, 30, 40);
+}
+main();
