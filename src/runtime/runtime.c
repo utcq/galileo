@@ -1,8 +1,12 @@
+#include <FFI/ffi.h>
 #include <stdlib.h>
 #include <runtime/rt.h>
 #include <ast/scope.h>
 #include <reporter/report.h>
 #include <pool/log.h>
+#include <string.h>
+
+void *ffi_lib;
 
 void runtime_declare_variable(struct pt_scope *scope, struct declaration_v *decl) {
   struct declaration_v *rt_decl = (struct declaration_v *)malloc(sizeof(struct declaration_v));
@@ -53,10 +57,27 @@ struct expression_node *runtime_fn_call(struct pt_scope *scope, struct expressio
   }
 
   struct pt_scope *fn_scope = decl->value->data.fn_decl->scope;
+
+  int is_extern=0;
+  for (int i=0; decl->value->specifiers[i] != NULL; i++) {
+    if (strcmp(decl->value->specifiers[i], "extern") == 0) {
+      is_extern=1;
+    }
+  }
+
+  int64_t *ffi_args = NULL;
+  if (is_extern) {
+    ffi_args = (int64_t *)malloc(sizeof(int64_t)*exp->data.function_call.argument_count);
+  }
   
   int i=0;
   struct function_parameter *arg = decl->value->data.fn_decl->parameters;
   while (arg) {
+    if (!exp->data.function_call.arguments) {
+      ERROR("Missing arguments\n");
+      exit(EXIT_FAILURE);
+      return NULL;
+    }
     if (
       (!exp->data.function_call.arguments[i])
       //TODO: || (exp->data.function_call.arguments[i]->type != arg->type)
@@ -65,11 +86,25 @@ struct expression_node *runtime_fn_call(struct pt_scope *scope, struct expressio
       exit(EXIT_FAILURE);
       return NULL;
     }
+    
+    if (is_extern) {
+      ffi_args[i] = (int64_t)(
+        runtime_eval_expression(scope, exp->data.function_call.arguments[i])->data
+      ).literal.value.str_value; // Str Value as it is 8 bytes
+    } else {
 
-    scope_get_declaration(fn_scope, arg->name)->value->data.var_decl->value = runtime_eval_expression(scope,
-      exp->data.function_call.arguments[i]
-    ); // set arg in scope to be processed expression
+      scope_get_declaration(fn_scope, arg->name)->value->data.var_decl->value = runtime_eval_expression(scope,
+        exp->data.function_call.arguments[i]
+      ); // set arg in scope to be processed expression
+
+    }
     arg = arg->next; i++;
+  }
+
+  if (is_extern) {
+    DEBUG("Executing FFI %s\n", decl->key);
+    FFI_translation_level(ffi_lib, decl, exp->data.function_call.argument_count, ffi_args);
+    return NULL;
   }
 
   return runtime_exec_stats(fn_scope);
@@ -200,14 +235,15 @@ struct expression_node *runtime_exec_stats(struct pt_scope *scope) {
 }
 
 void runtime_execute(struct pt_scope *scope) {
+  ffi_lib = FFI_load_lib("./stdlib.so");
   runtime_exec_stats(scope); // exec gloabal scope
   /*struct declaration_map_child *decl = scope_get_declaration(scope, "tst_var");
   if (decl) {
     DEBUG("%s = %d\n", decl->value->data.var_decl->name, decl->value->data.var_decl->value->data.literal.value.int_value);
   }*/
-  struct expression_node *val = scope_get_declaration(
+  /*struct expression_node *val = scope_get_declaration(
     scope_get_declaration(scope, "main")->value->data.fn_decl->scope,
     "r"
   )->value->data.var_decl->value;
-  DEBUG("main.r = %d\n", val->data.literal.value.int_value);
+  DEBUG("main.r = %d\n", val->data.literal.value.int_value);*/
 }

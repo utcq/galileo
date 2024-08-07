@@ -8,6 +8,7 @@
 #define MAX_INT_LEN 20
 #define MAX_IDENT_LEN 100
 #define MAX_MACRO_LEN 256
+#define MAX_STRING_LEN 256
 #define MACRO_DEF_INDEX 1
 
 struct token_stream {

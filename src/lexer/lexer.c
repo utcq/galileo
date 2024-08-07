@@ -136,6 +136,49 @@ void lexer_parse_prefix(struct Lexer *lexer) {
     lexer_append_token(lexer, token);
 }
 
+void lexer_parse_string(struct Lexer *lexer) {
+  lexer_advance(lexer, 1);
+  char *literal = (char*)malloc(MAX_STRING_LEN);
+  if (!literal) {
+    perror("Failed to allocate memory for string literal");
+    return;
+  }
+  literal[0] = '\0';
+
+  ALLOC_TOKEN(token);
+  token->pos = lexer->pos;
+  token->value = literal;
+  token->type = TOKEN_TYPE_STRING;
+
+  for (char c = lexer_eat(lexer); c && c != '"'; c = lexer_eat(lexer)) {
+    if (c == '\\') {
+      c = lexer_eat(lexer);
+      switch (c) {
+        case 'n': c = '\n'; break;
+        case 't': c = '\t'; break;
+        case 'r': c = '\r'; break;
+        case '\\': c = '\\'; break;
+        case '"': c = '"'; break;
+        default: 
+          WARN("Unknown escape sequence \\%c\n", c);
+          continue;
+      }
+    }
+    strncat(literal, &c, 1);
+  }
+  lexer_advance(lexer, -1);
+  if (lexer->p_tok != '"') {
+    WARN("Unterminated string literal\n");
+    return;
+  }
+  lexer_advance(lexer, 1);
+  token->len = strlen(literal);
+  literal[token->len] = '\0';
+
+  CLEANUP_SIZE(token);
+  lexer_append_token(lexer, token);
+}
+
 void lexer_parse_symbol(struct Lexer *lexer) {
     struct symbol_entry *symbol = lexer_utils_get_symbol(lexer);
     if (!symbol) {
@@ -173,19 +216,25 @@ void lexer_discriminator(struct Lexer *lexer) {
   }
   else if (lexer->p_tok == '/' && lexer_peek(lexer, 1) == '/') {
     lexer_advance(lexer, 2);
-    while (lexer->p_tok != '\n') {
+    while (lexer->p_tok && lexer->p_tok != '\n') {
       lexer_advance(lexer, 1);
     }
   }
   else if (lexer->p_tok == '/' && lexer_peek(lexer, 1) == '*') {
     lexer_advance(lexer, 2);
-    while (lexer->p_tok != '*' && lexer_peek(lexer, 1) != '/') {
-      lexer_advance(lexer, 1);
+    while (lexer->p_tok) {
+        if (lexer->p_tok == '*' && lexer_peek(lexer, 1) == '/') {
+            lexer_advance(lexer, 2);
+            break;
+        }
+        lexer_advance(lexer, 1);
     }
-    lexer_advance(lexer, 2);
   }
   else if (lexer_utils_issymbol(lexer)) {
     lexer_parse_symbol(lexer);
+  }
+  else if (lexer->p_tok == '"') {
+    lexer_parse_string(lexer);
   }
   else if (lexer->p_tok == ' ' || lexer->p_tok == '\n' || lexer->p_tok == '\t' || lexer->p_tok == '\r' || lexer->p_tok == '\0') {
     lexer_advance(lexer, 1); // Handle whitespaces
